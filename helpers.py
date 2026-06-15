@@ -211,3 +211,21 @@ def whiten(X, inds_train, fudge_factor=10 ** -5):
     Xv = np.sqrt(Xv + sum(Xv) * fudge_factor)
     X = X / Xv
     return X, u, Xv
+
+
+def get_complex_weights(model, n_nodes=None):
+    Wr, Wi = model.layers[0].get_weights()
+    if n_nodes:
+        return Wr[:, :n_nodes] + 1j * Wi[:, :n_nodes]
+    return Wr + 1j * Wi
+
+
+def node_arm_map(model, wLFPs, test_inds, lapID, top_k=1):
+    """
+    Returns top_k nodes most associated with each arm, based on test-set activations.
+    """
+    p = layer_output(wLFPs[test_inds], model, 2)
+    arm_labels = lapID[test_inds, 1].astype(int)
+    arm_means = np.array([p[arm_labels == arm].mean(axis=0) for arm in range(3)])
+    return [list(np.argsort(arm_means[arm])[-top_k:][::-1]) for arm in range(3)]
+
